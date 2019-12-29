@@ -1,31 +1,41 @@
+# This Python script will load text from a text file and create a vocabulary list
+# by using a topic modling process like SVD, NMF or LDA. It then creates an html 
+# table with the original sentences on one line and the parts of speech on the 
+# following line. The purpose is to make reading a foreign language easier for
+# a language student. Each word in the original sentence will be a link to a
+# wordreference.com translation.
+
+# There will also be two links for each sentence: one link that goes to google translate
+# and one link that creates a sentence diagram.
+
+# Imports from python
 import re
 from math import floor
+import numpy as np
+
+# Imports from SpaCy
 import spacy
 from spacy.lang.en.examples import sentences
-import numpy as np
+from spacy.lang.es.stop_words import STOP_WORDS
+
+# Imports froms Scikit-Learn
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import NMF, TruncatedSVD, LatentDirichletAllocation 
 from sklearn.decomposition import TruncatedSVD as SVD 
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
-def make_corpus(raw_text):
-    """Converts raw text into a corpus by splitting the text on end of sentences
-    on end of line characters (.!?), and stripping non-word characters."""
-    sentences = re.split(r'[\.\!\?]', raw_text)
-    sentences = [re.sub(r'\W', ' ', sent) for sent in sentences]
-    sentences = [re.sub(r'\s+', ' ', sent).strip() for sent in sentences]
-    return sentences
+from readerlib import make_corpus, word_count
 
-def word_count(list_of_strings):
-    """Returns a word count of a corpus."""
-    counter = 0
-    for string in list_of_strings:
-        counter += len(re.findall(r' ', string)) + 1
-    return counter
+with open('news.txt', 'r') as f:
+    text = f.read()
 
 words = word_count(make_corpus(text))
 print('Words:', words)
 print('Topics:', floor(np.log2(words)))
+
+cv = CountVectorizer(stop_words=STOP_WORDS, strip_accents=None)
+word_vec = cv.fit_transform(make_corpus(text))
+print(word_vec)
 
 exit()
 
