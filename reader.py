@@ -24,18 +24,25 @@ from sklearn.decomposition import NMF, TruncatedSVD, LatentDirichletAllocation
 from sklearn.decomposition import TruncatedSVD as SVD 
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
-from readerlib import make_corpus, word_count
+# Local imports
+from readerlib import make_corpus, word_count, display_topics
 
+# Read text file with the text to process.
 with open('news.txt', 'r') as f:
     text = f.read()
 
+# Create a corpus, count the words and set the number of topics
 words = word_count(make_corpus(text))
+n_topics = floor(np.log2(words))
 print('Words:', words)
-print('Topics:', floor(np.log2(words)))
+print('Topics:', n_topics)
 
+# Create a the CountVectorizer and NMF objects.
 cv = CountVectorizer(stop_words=STOP_WORDS, strip_accents=None)
 word_vec = cv.fit_transform(make_corpus(text))
-print(word_vec)
+nmf = NMF(n_components=n_topics, shuffle=True)
+topics = nmf.fit_transform(word_vec)
+print(topics)
 
 exit()
 

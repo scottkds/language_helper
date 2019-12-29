@@ -15,6 +15,15 @@ def word_count(list_of_strings):
         counter += len(re.findall(r' ', string)) + 1
     return counter
 
+def display_topics(model, feature_names, no_top_words, topic_names=None):
+    for ix, topic in enumerate(model.components_):
+        if not topic_names or not topic_names[ix]:
+            print("\nTopic ", ix)
+        else:
+            print("\nTopic: '",topic_names[ix],"'")
+        print(", ".join([feature_names[i]
+                        for i in topic.argsort()[:-no_top_words - 1:-1]]))
+
 # Part of speech to description provides a more descriptive name to each part of
 # speech (pos)
 pos_to_desc = {
