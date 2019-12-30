@@ -48,6 +48,16 @@ def get_named_entities(text):
         del(entities[key])
     return entities
 
+def get_parts_of_speech(corpus):
+    """Returns the words in a sentence with their tagged parts of speech."""
+    tagged_sentences = []
+    for doc in corpus:
+        doc_words = []
+        tagged_doc = nlp(doc)
+        for word in tagged_doc:
+           doc_words.append((word.text, word.pos_))
+        tagged_sentences.append(doc_words)
+    return tagged_sentences
 
 # Part of speech to description provides a more descriptive name to each part of
 # speech (pos)
