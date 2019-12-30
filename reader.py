@@ -25,25 +25,27 @@ from sklearn.decomposition import TruncatedSVD as SVD
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
 # Local imports
-from readerlib import make_corpus, word_count, display_topics
+from readerlib import make_corpus, word_count, display_topics, get_named_entities 
 
 # Read text file with the text to process.
 with open('news.txt', 'r') as f:
     text = f.read()
 
 # Create a corpus, count the words and set the number of topics
-words = word_count(make_corpus(text))
+corpus = make_corpus(text)
+for sent in corpus:
+    if ',' in sent:
+        print(sent)
+words = word_count(corpus)
 n_topics = floor(np.log2(words))
-print('Words:', words)
-print('Topics:', n_topics)
+entities = get_named_entities(text)
 
 # Create a the CountVectorizer and NMF objects.
 cv = CountVectorizer(stop_words=STOP_WORDS, strip_accents=None)
 word_vec = cv.fit_transform(make_corpus(text))
 nmf = NMF(n_components=n_topics, shuffle=True)
 topics = nmf.fit_transform(word_vec)
-print(topics)
-
+# display_topics(nmf, cv.get_feature_names(), 5)
 exit()
 
 nlp = spacy.load('es_core_news_sm')
