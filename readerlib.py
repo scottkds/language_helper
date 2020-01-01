@@ -37,13 +37,13 @@ def get_named_entities(text):
     for ent in doc.ents:
         entities[ent.text] = ent.label_
     key_list = list(entities.keys())
+    # Sapcy creates a lot of similar entities. The next two for loops will delete
+    # any entitiy that is completly contained in another entitiy.
     keys_to_delete = set()
     for key in key_list:
         for other_key in key_list:
             if key != other_key and key in other_key:
                 keys_to_delete.add(key)
-    # print(entities.keys())
-    print(keys_to_delete)
     for key in keys_to_delete:
         del(entities[key])
     return entities
@@ -58,6 +58,19 @@ def get_parts_of_speech(corpus):
            doc_words.append((word.text, word.pos_))
         tagged_sentences.append(doc_words)
     return tagged_sentences
+
+
+def add_word_reference_links(tagged_docs):
+    """Takes a list of parts of speech tagged documents and converts the individuak
+    words in each document to a link on the wordreference.com website."""
+    link_base = 'https://www.wordreference.com/es/en/translation.asp?spen={}'
+    linked_docs = []
+    for doc in tagged_docs:
+        word, pos = doc
+        linked_docs.append((link_base.format(word), word, pos))
+    return linked_docs
+ 
+
 
 # Part of speech to description provides a more descriptive name to each part of
 # speech (pos)

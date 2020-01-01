@@ -20,12 +20,12 @@ from spacy.lang.es.stop_words import STOP_WORDS
 
 # Imports froms Scikit-Learn
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import NMF, TruncatedSVD, LatentDirichletAllocation 
+from sklearn.decomposition import NMF 
 from sklearn.decomposition import TruncatedSVD as SVD 
 from sklearn.decomposition import LatentDirichletAllocation as LDA
 
 # Local imports
-from readerlib import make_corpus, word_count, display_topics, get_named_entities, get_parts_of_speech
+from readerlib import *
 
 # Read text file with the text to process.
 with open('news.txt', 'r') as f:
@@ -45,13 +45,6 @@ topics = nmf.fit_transform(word_vec)
 # display_topics(nmf, cv.get_feature_names(), 5)
 marked_sentences = get_parts_of_speech(corpus)
 for ms in marked_sentences:
-    print(ms)
-
+    # print(ms)
+    print(list(add_word_reference_links(ms)))
 exit()
-
-nlp = spacy.load('es_core_news_sm')
-doc = nlp("Eso nos lleva a las elecciones del 20 de octubre del 2019 donde Evo buscaba un cuarto período presidencial")
-print(doc.text)
-for token in doc:
-    print(token.text, token.pos_, token.lemma_)
-
