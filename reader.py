@@ -44,7 +44,14 @@ nmf = NMF(n_components=n_topics, shuffle=True)
 topics = nmf.fit_transform(word_vec)
 # display_topics(nmf, cv.get_feature_names(), 5)
 marked_sentences = get_parts_of_speech(corpus)
-for ms in marked_sentences:
-    # print(ms)
-    print(list(add_word_reference_links(ms)))
-exit()
+marked_sentences = add_word_reference_links(marked_sentences)
+
+with open('base.html', 'r') as f:
+    base = f.read()
+
+base = re.sub(r'<\$REPLACE\$>', make_table(marked_sentences), base)
+
+with open('index.html', 'w') as fo:
+    fo.write(base)
+
+

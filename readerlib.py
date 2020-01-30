@@ -1,13 +1,42 @@
 import re
 import spacy
+import pdb
+
+MAX_TABLE_LENGTH = 10
 
 nlp = spacy.load('es_core_news_sm')
+
+# Part of speech to description provides a more descriptive name to each part of
+# speech (pos)
+pos_to_desc = {
+    'ADJ': 'adjective',
+    # 'ADP': 'adposition',
+    'ADP': 'preposition',
+    'ADV': 'adverb',
+    'AUX': 'auxiliary verb',
+    'CONJ': 'coor-conj',
+    'DET': 'determiner',
+    'INTJ': 'interjection',
+    'NOUN': 'noun',
+    'NUM': 'numeral',
+    'PART': 'particle',
+    'PRON': 'pronoun',
+    'PROPN': 'proper noun',
+    'PUNCT': 'punctuation',
+    'SCONJ': 'sub-conj',
+    'SYM': 'symbol',
+    'VERB': 'verb',
+    'END': 'end'
+}
+
 def make_corpus(raw_text):
     """Converts raw text into a corpus by splitting the text on end of sentences
     on end of line characters (.!?), and stripping non-word characters."""
-    sentences = re.split(r'[\.\!\?]', raw_text)
-    sentences = [re.sub(r'\W', ' ', sent) for sent in sentences]
+    sentences = re.split(r'\. |\.\n|\! |\!\n|\? |\?\n', raw_text)
+    sentences = [re.sub(r'\W | \(' , ' ', sent) for sent in sentences]
     sentences = [re.sub(r'\s+', ' ', sent).strip() for sent in sentences]
+    if sentences[-1] == '':
+        sentences.pop(-1)
     return sentences
 
 def word_count(list_of_strings):
@@ -37,7 +66,7 @@ def get_named_entities(text):
     for ent in doc.ents:
         entities[ent.text] = ent.label_
     key_list = list(entities.keys())
-    # Sapcy creates a lot of similar entities. The next two for loops will delete
+    # Spacy creates a lot of similar entities. The next two for loops will delete
     # any entitiy that is completly contained in another entitiy.
     keys_to_delete = set()
     for key in key_list:
@@ -49,6 +78,7 @@ def get_named_entities(text):
     return entities
 
 def get_parts_of_speech(corpus):
+#    import pdb; pdb.set_trace()
     """Returns the words in a sentence with their tagged parts of speech."""
     tagged_sentences = []
     for doc in corpus:
@@ -56,39 +86,81 @@ def get_parts_of_speech(corpus):
         tagged_doc = nlp(doc)
         for word in tagged_doc:
            doc_words.append((word.text, word.pos_))
+        doc_words.append(('\u25E6', 'END'))
         tagged_sentences.append(doc_words)
     return tagged_sentences
 
 
 def add_word_reference_links(tagged_docs):
-    """Takes a list of parts of speech tagged documents and converts the individuak
+    """Takes a list of parts of speech tagged documents and converts the individual
     words in each document to a link on the wordreference.com website."""
     link_base = 'https://www.wordreference.com/es/en/translation.asp?spen={}'
     linked_docs = []
     for doc in tagged_docs:
-        word, pos = doc
-        linked_docs.append((link_base.format(word), word, pos))
+        linked_sent = []
+        for tup in doc:
+            word, pos = tup
+            linked_sent.append((link_base.format(word), word, pos))
+        linked_docs.append(linked_sent)
     return linked_docs
+
+def make_cells(data):
+    """Creates two CSS table cells from the input data. The data should be a tuple
+    of three parts, a link, a word, and a part of speech. The result will be a 
+    tuple of two cells. One for a word-link that will form part of the readable
+    sentence, and a cell for the part of speech."""
+    link, word, pos = data
+    word_cell = """<div class="Cell"><a href="{}">{}</a></div>""".format(link, word)
+    pos_cell = """<div class="Cell"><p>{}</p></div>""".format(pos)
+    return (word_cell, pos_cell)
+
+def make_word_cells(data):
+    """Creates a CSS table cell from the input data. The data should be a tuple
+    of three parts, a link, a word, and a part of speech. The result will be a 
+    a a table cell with a word-link that will form part of the readable sentence."""
+    link, word, pos = data
+    word_cell = """<div class="Cell"><a href="{}">{}</a></div>""".format(link, word)
+    return word_cell
+
+def make_pos_cells(data):
+    """Creates a CSS table cell from the input data. The data should be a tuple
+    of three parts, a link, a word, and a part of speech. The result will be a 
+    a a table cell with a part of speech."""
+    link, word, pos = data
+    # pos_cell = """<div class="Cell"><p>{}</p></div>""".format(pos_to_desc[pos])
+    pos_cell = """<div class="Cell">{}</div>""".format(pos_to_desc[pos])
+    return pos_cell
  
+def make_row(tagged_sentence):
+    """Creates a row for a table by mapping either make_word_cells or make_pos_cells
+    to a tagged sentence."""
+    rows = ''
+    while tagged_sentence:
+        sentence_part = tagged_sentence[:MAX_TABLE_LENGTH]
+        rows += '<div class="Row">' + ''.join(map(make_word_cells, sentence_part)) + '</div>'
+        rows += '<div class="Row">' + ''.join(map(make_pos_cells, sentence_part)) + '</div>'
+        tagged_sentence = tagged_sentence[MAX_TABLE_LENGTH:]
+    rows += make_empty_row()
+    return rows
+
+def make_empty_row():
+    """Creates a row for a table by mapping either make_word_cells or make_pos_cells
+    to a tagged sentence."""
+    cells = ''
+    # for num in range(MAX_TABLE_LENGTH):
+    #     cells += '<div class="Cell"><p>___</p></div>'
+    return '<div class="Row">' + cells + '</div>'
+
+def make_table(corpus):
+    table_header = '<div class="Table">'
+    table_footer = '</div>'
+    table_content = ''
+    # for doc in corpus:
+    #     table_content += make_row(doc)
+    # return table_header + table_content + table_footer
+    for doc in corpus:
+        table_content += table_header + make_row(doc) + table_footer + '<br><br>'
+    return table_content 
 
 
-# Part of speech to description provides a more descriptive name to each part of
-# speech (pos)
-pos_to_desc = {
-    'ADJ': 'adjective',
-    'ADP': 'adposition',
-    'ADV': 'adverb',
-    'AUX': 'auxiliary verb',
-    'CONJ': 'coordinating conjunction',
-    'DET': 'determiner',
-    'INTJ': 'interjection',
-    'NOUN': 'noun',
-    'NUM': 'numeral',
-    'PART': 'particle',
-    'PRON': 'pronoun',
-    'PROPN': 'proper noun',
-    'PUNCT': 'punctuation',
-    'SCONJ': 'subordinating conjunction',
-    'SYM': 'symbol',
-    'VERB': 'verb'
-}
+
