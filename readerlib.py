@@ -1,5 +1,6 @@
 import re
 import spacy
+from spacy_readability import Readability
 import pdb
 
 MAX_TABLE_LENGTH = 10
@@ -13,7 +14,7 @@ pos_to_desc = {
     # 'ADP': 'adposition',
     'ADP': 'preposition',
     'ADV': 'adverb',
-    'AUX': 'auxiliary verb',
+    'AUX': 'aux verb',
     'CONJ': 'coor-conj',
     'DET': 'determiner',
     'INTJ': 'interjection',
@@ -95,12 +96,18 @@ def add_word_reference_links(tagged_docs):
     """Takes a list of parts of speech tagged documents and converts the individual
     words in each document to a link on the wordreference.com website."""
     link_base = 'https://www.wordreference.com/es/en/translation.asp?spen={}'
+    google_base = 'https://translate.google.com/#view=home&op=translate&sl=es&tl=en&text='
     linked_docs = []
+    google_tx = ''
     for doc in tagged_docs:
         linked_sent = []
         for tup in doc:
             word, pos = tup
-            linked_sent.append((link_base.format(word), word, pos))
+            if word !=  '\u25E6':
+                linked_sent.append((link_base.format(word), word, pos))
+                google_tx += (word + '%20')
+            else:
+                linked_sent.append((google_base + google_tx, word, pos))
         linked_docs.append(linked_sent)
     return linked_docs
 
@@ -151,7 +158,7 @@ def make_empty_row():
     #     cells += '<div class="Cell"><p>___</p></div>'
     return '<div class="Row">' + cells + '</div>'
 
-def make_table(corpus):
+def make_tables(corpus):
     table_header = '<div class="Table">'
     table_footer = '</div>'
     table_content = ''
@@ -161,6 +168,4 @@ def make_table(corpus):
     for doc in corpus:
         table_content += table_header + make_row(doc) + table_footer + '<br><br>'
     return table_content 
-
-
 

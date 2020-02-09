@@ -17,6 +17,7 @@ import numpy as np
 import spacy
 from spacy.lang.en.examples import sentences
 from spacy.lang.es.stop_words import STOP_WORDS
+from spacy_langdetect import LanguageDetector
 
 # Imports froms Scikit-Learn
 from sklearn.feature_extraction.text import CountVectorizer
@@ -40,16 +41,17 @@ entities = get_named_entities(text)
 # Create a the CountVectorizer and NMF objects.
 cv = CountVectorizer(stop_words=STOP_WORDS, strip_accents=None)
 word_vec = cv.fit_transform(make_corpus(text))
-nmf = NMF(n_components=n_topics, shuffle=True)
+# nmf = NMF(n_components=n_topics, shuffle=True)
+nmf = LDA(n_components=n_topics)
 topics = nmf.fit_transform(word_vec)
-# display_topics(nmf, cv.get_feature_names(), 5)
+display_topics(nmf, cv.get_feature_names(), 5)
 marked_sentences = get_parts_of_speech(corpus)
 marked_sentences = add_word_reference_links(marked_sentences)
 
 with open('base.html', 'r') as f:
     base = f.read()
 
-base = re.sub(r'<\$REPLACE\$>', make_table(marked_sentences), base)
+base = re.sub(r'<\$REPLACE\$>', make_tables(marked_sentences), base)
 
 with open('index.html', 'w') as fo:
     fo.write(base)
