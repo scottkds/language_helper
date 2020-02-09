@@ -1,6 +1,7 @@
 import re
 import spacy
 from spacy_readability import Readability
+from spacy_langdetect import LanguageDetector
 import pdb
 
 MAX_TABLE_LENGTH = 10
@@ -47,15 +48,15 @@ def word_count(list_of_strings):
         counter += len(re.findall(r' ', string)) + 1
     return counter
 
-def display_topics(model, feature_names, no_top_words, topic_names=None):
-    """Prints the topics found my matrix decomposition."""
-    for ix, topic in enumerate(model.components_):
-        if not topic_names or not topic_names[ix]:
-            print("\nTopic ", ix)
-        else:
-            print("\nTopic: '",topic_names[ix],"'")
-        print(", ".join([feature_names[i]
-                        for i in topic.argsort()[:-no_top_words - 1:-1]]))
+
+def create_vocab(model, feature_names, no_top_words):
+    """Creates a set of vocabulary words from a word count vectorizer decomposition."""
+    vocab = set()
+    for idx, topic in enumerate(model.components_):
+        topic_words = [feature_names[i] for i in topic.argsort()[:-no_top_words - 1:-1]]
+        for word in topic_words:
+            vocab.add(word)
+    return ', '.join(['<a href="https://www.wordreference.com/es/en/translation.asp?spen={}">{}</a>'.format(word, word) for word in vocab])
 
 def get_named_entities(text):
     """Uses spacy named entity recognition to identify enitites for each sentence in a
@@ -169,3 +170,8 @@ def make_tables(corpus):
         table_content += table_header + make_row(doc) + table_footer + '<br><br>'
     return table_content 
 
+def make_named_entity_list(entities):
+    entities_html_list = ''
+    for key in entities.keys():
+        entities_html_list += ('<li>' + key + '</li>\n')
+    return '<ul>\n' + entities_html_list + '</ul>\n'
