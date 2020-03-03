@@ -31,11 +31,15 @@ from readerlib import *
 with open('news.txt', 'r') as f:
     text = f.read()
 
+nlp = spacy.load('es_core_news_sm')
 # Create a corpus, count the words and set the number of topics
 corpus = make_corpus(text)
+# Determine language.
+nlp, lang = determine_language(corpus, nlp)
+print(lang)
 words = word_count(corpus)
 n_topics = floor(np.log2(words))
-entities = get_named_entities(text)
+entities = get_named_entities(text, nlp)
 entities_list = make_named_entity_list(entities)
 
 # Create a the CountVectorizer and NMF objects.
@@ -45,8 +49,8 @@ word_vec = cv.fit_transform(make_corpus(text))
 nmf = LDA(n_components=n_topics)
 topics = nmf.fit_transform(word_vec)
 vocabulary= create_vocab(nmf, cv.get_feature_names(), 5)
-marked_sentences = get_parts_of_speech(corpus)
-marked_sentences = add_word_reference_links(marked_sentences)
+marked_sentences = get_parts_of_speech(corpus, nlp)
+marked_sentences = add_word_reference_links(marked_sentences, lang)
 
 with open('base.html', 'r') as f:
     base = f.read()
@@ -58,4 +62,4 @@ base = re.sub(r'<\$VOCAB\$>', vocabulary, base)
 with open('index.html', 'w') as fo:
     fo.write(base)
 
-
+print(type(nlp))

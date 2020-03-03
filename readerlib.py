@@ -6,7 +6,8 @@ import pdb
 
 MAX_TABLE_LENGTH = 10
 
-nlp = spacy.load('es_core_news_sm')
+supported_languages = {'es': 'es_core_news_md',
+                      'pt': 'pt_core_news_sm'}
 
 # Part of speech to description provides a more descriptive name to each part of
 # speech (pos)
@@ -17,6 +18,7 @@ pos_to_desc = {
     'ADV': 'adverb',
     'AUX': 'aux verb',
     'CONJ': 'coor-conj',
+    'CCONJ': 'coor-conj',
     'DET': 'determiner',
     'INTJ': 'interjection',
     'NOUN': 'noun',
@@ -35,7 +37,7 @@ def make_corpus(raw_text):
     """Converts raw text into a corpus by splitting the text on end of sentences
     on end of line characters (.!?), and stripping non-word characters."""
     sentences = re.split(r'\. |\.\n|\! |\!\n|\? |\?\n', raw_text)
-    sentences = [re.sub(r'\W | \(' , ' ', sent) for sent in sentences]
+    sentences = [re.sub(r'\W |\(|\)', ' ', sent) for sent in sentences]
     sentences = [re.sub(r'\s+', ' ', sent).strip() for sent in sentences]
     if sentences[-1] == '':
         sentences.pop(-1)
@@ -58,13 +60,13 @@ def create_vocab(model, feature_names, no_top_words):
             vocab.add(word)
     return ', '.join(['<a href="https://www.wordreference.com/es/en/translation.asp?spen={}">{}</a>'.format(word, word) for word in vocab])
 
-def get_named_entities(text):
+def get_named_entities(text, spc_obj):
     """Uses spacy named entity recognition to identify enitites for each sentence in a
     corpus, and returns a list of lists of named entities."""
     entities = {}
     text = re.sub(r'\W', ' ', text)
     text = re.sub(r'\s+', ' ', text).strip()
-    doc = nlp(text)
+    doc = spc_obj(text)
     for ent in doc.ents:
         entities[ent.text] = ent.label_
     key_list = list(entities.keys())
@@ -79,13 +81,13 @@ def get_named_entities(text):
         del(entities[key])
     return entities
 
-def get_parts_of_speech(corpus):
+def get_parts_of_speech(corpus, spc_obj):
 #    import pdb; pdb.set_trace()
     """Returns the words in a sentence with their tagged parts of speech."""
     tagged_sentences = []
     for doc in corpus:
         doc_words = []
-        tagged_doc = nlp(doc)
+        tagged_doc = spc_obj(doc)
         for word in tagged_doc:
            doc_words.append((word.text, word.pos_))
         doc_words.append(('\u25E6', 'END'))
@@ -93,11 +95,12 @@ def get_parts_of_speech(corpus):
     return tagged_sentences
 
 
-def add_word_reference_links(tagged_docs):
+def add_word_reference_links(tagged_docs, language):
     """Takes a list of parts of speech tagged documents and converts the individual
     words in each document to a link on the wordreference.com website."""
-    link_base = 'https://www.wordreference.com/es/en/translation.asp?spen={}'
-    google_base = 'https://translate.google.com/#view=home&op=translate&sl=es&tl=en&text='
+    links = {'pt': 'https://www.wordreference.com/pten/{0}',
+             'es': 'https://www.wordreference.com/es/en/translation.asp?spen={0}'}
+    google_base = 'https://translate.google.com/#view=home&op=translate&sl={}&tl=en&text={}'
     linked_docs = []
     google_tx = ''
     for doc in tagged_docs:
@@ -105,10 +108,10 @@ def add_word_reference_links(tagged_docs):
         for tup in doc:
             word, pos = tup
             if word !=  '\u25E6':
-                linked_sent.append((link_base.format(word), word, pos))
+                linked_sent.append((links[language].format(word), word, pos))
                 google_tx += (word + '%20')
             else:
-                linked_sent.append((google_base + google_tx, word, pos))
+                linked_sent.append((google_base.format(language, google_tx), word, pos))
         linked_docs.append(linked_sent)
     return linked_docs
 
@@ -160,6 +163,8 @@ def make_empty_row():
     return '<div class="Row">' + cells + '</div>'
 
 def make_tables(corpus):
+    """Creates a CSS based table for each line of the text. Each table contains the words
+    of the sentence on one line and the parts of speech on the subsequent line."""
     table_header = '<div class="Table">'
     table_footer = '</div>'
     table_content = ''
@@ -171,7 +176,20 @@ def make_tables(corpus):
     return table_content 
 
 def make_named_entity_list(entities):
+    """Creates and HMTL unordered list of named entities."""
     entities_html_list = ''
     for key in entities.keys():
         entities_html_list += ('<li>' + key + '</li>\n')
     return '<ul>\n' + entities_html_list + '</ul>\n'
+
+
+def determine_language(corpus, spc_obj):
+    """Determines the language of the first five lines of the corpus."""
+    spc_obj.add_pipe(LanguageDetector(), name='language_detector', last=True)
+    doc = ''
+    for line in corpus[:5]:
+        doc += (line + ' ') 
+    lang = spc_obj(doc)._.language['language']
+    if lang != 'es':
+        spc_obj = spacy.load(supported_languages[lang])
+    return (spc_obj, lang)
